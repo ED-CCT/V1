@@ -290,7 +290,6 @@ return events.map(e => {
 if(e.event === "LoadGame"){
 return `
 <div class="box">
-<h4>LoadGame</h4>
 <p><b>Commander:</b> ${e.Commander ?? "-"}</p>
 <p><b>Ship:</b> ${e.Ship_Localised ?? "-"}</p>
 <p><b>Credits:</b> ${e.Credits ?? 0}</p>
@@ -302,13 +301,11 @@ return `
 if(e.event === "Loadout"){
 return `
 <div class="box">
-<h4>Loadout</h4>
 <p><b>Ship ID:</b> ${e.ShipIdent ?? "-"}</p>
 <p><b>Hull Value:</b> ${e.HullValue ?? 0}</p>
 <p><b>Modules Value:</b> ${e.ModulesValue ?? 0}</p>
 <p><b>Cargo Capacity:</b> ${e.CargoCapacity ?? 0}</p>
 <p><b>Max Jump Range:</b> ${e.MaxJumpRange ?? 0}</p>
-<p class="small">${e.timestamp ?? "-"}</p>
 </div>
 `;
 }
@@ -317,10 +314,7 @@ if(e.event === "Cargo"){
 return `
 <div class="box">
 <h4>Cargo</h4>
-
-<p><b>Vessel:</b> ${e.Vessel ?? "-"}</p>
-<p><b>Total Count:</b> ${e.Count ?? 0}</p>
-<p class="small">${e.timestamp ?? "-"}</p>
+<p><b>Total Count:</b> ${e.Count ?? 0}</p
 
 ${Array.isArray(e.Inventory) && e.Inventory.length ? `
 <div class="box" style="margin-top:10px;">
@@ -328,7 +322,7 @@ ${Array.isArray(e.Inventory) && e.Inventory.length ? `
 
 ${e.Inventory.map(i => `
 <p>
-<b>${i.Name ?? "-"}</b> — ${i.Count ?? 0}
+<b>${i.Name ?? "-"}</b> - ${i.Count ?? 0}
 </p>
 `).join("")}
 
