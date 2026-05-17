@@ -247,18 +247,20 @@ const commanderHTML = `
 
 <h4>Commander</h4>
 
-<p><b>Name:</b> ${data.commander?.name || "-"}</p>
+<p><b>Name:</b> ${data.commander?.name || "NO DATA"}</p>
 
 <p>
 <b>Squadron:</b>
-${data.squadron?.name || "-"}
-[${data.squadron?.tag || "-"}]
+${data.squadron?.name || "NO DATA"}
+[${data.squadron?.tag || ""}]
 </p>
 
-<p><b>Rank:</b> ${data.squadron?.rank || "-"}</p>
+<p><b>Rank:</b> ${data.squadron?.rank || "NO DATA"}</p>
 
 <p><b>Credits:</b> ${
-Number(data.commander?.credits || 0).toLocaleString()
+typeof data.commander?.credits === "number"
+? data.commander.credits.toLocaleString()
+: "NO DATA"
 }</p>
 
 <p><b>Alive:</b> ${
@@ -267,48 +269,52 @@ data.ship?.alive ? "YES" : "NO"
 
 <hr>
 
-<p><b>System:</b> ${locationEvent.StarSystem || "-"}</p>
+<p><b>System:</b> ${locationEvent.StarSystem || "NO DATA"}</p>
 
 <p><b>Security:</b> ${
-locationEvent.SystemSecurity_Localised || "-"
+locationEvent.SystemSecurity_Localised || "NO DATA"
 }</p>
 
-<p><b>Body:</b> ${locationEvent.Body || "-"}</p>
+<p><b>Body:</b> ${locationEvent.Body || "NO DATA"}</p>
 
 <p><b>Station Type:</b> ${
-locationEvent.StationType || "-"
+locationEvent.StationType || "NO DATA"
 }</p>
 
 <p><b>Station:</b> ${
-locationEvent.StationName || "-"
+locationEvent.StationName || "NO DATA"
 }</p>
 
 <hr>
 
 <p><b>Game Mode:</b> ${
-loadGameEvent.GameMode || "-"
+loadGameEvent.GameMode || "NO DATA"
 }</p>
 
 <p><b>Ship:</b> ${
-loadGameEvent.Ship_Localised || "-"
+loadGameEvent.Ship_Localised || "NO DATA"
 }</p>
 
 <hr>
 
 <p>
 <b>Ship Name:</b>
-${loadoutEvent.ShipName || "-"}
+${loadoutEvent.ShipName || ""}
 -
-${loadoutEvent.ShipIdent || "-"}
+${loadoutEvent.ShipIdent || "NO DATA"}
 </p>
 
 <p><b>Hull:</b> ${
-Math.round((loadoutEvent.HullHealth || 0) * 100)
-}%</p>
+typeof loadoutEvent.HullHealth === "number"
+? Math.round(loadoutEvent.HullHealth * 100) + "%"
+: "NO DATA"
+}</p>
 
 <p><b>Shield:</b> ${
-data.ship?.health?.shield || 0
-}%</p>
+typeof data.ship?.health?.shield === "number"
+? data.ship.health.shield + "%"
+: "NO DATA"
+}</p>
 
 <p><b>Docked:</b> ${
 data.commander?.docked ? "YES" : "NO"
@@ -319,25 +325,31 @@ data.ship?.cockpitBreached ? "YES" : "NO"
 }</p>
 
 <p><b>Oxygen:</b> ${
-data.ship?.oxygenRemaining || 0
+data.ship?.oxygenRemaining || "NO DATA"
 }</p>
 
 <p>
 <b>Fuel:</b>
-${loadGameEvent.FuelLevel || 0}
-/
-${loadGameEvent.FuelCapacity || 0}
+${
+loadGameEvent.FuelLevel != null &&
+loadGameEvent.FuelCapacity != null
+? `${loadGameEvent.FuelLevel} / ${loadGameEvent.FuelCapacity}`
+: "NO DATA"
+}
 </p>
 
-<p><b>Jump Range:</b> ${
-loadoutEvent.MaxJumpRange || 0
-}</p>
+<p><b>Jump Range:</b> 
+${loadoutEvent.MaxJumpRange || "NO DATA"}
+</p>
 
 <p>
 <b>Cargo:</b>
-${cargoEvent.Count || 0}
-/
-${loadoutEvent.CargoCapacity || 0}
+${
+cargoEvent.Count != null &&
+loadoutEvent.CargoCapacity != null
+? `${cargoEvent.Count} / ${loadoutEvent.CargoCapacity}`
+: "NO DATA"
+}
 </p>
 
 </div>
@@ -355,10 +367,10 @@ Array.isArray(cargoEvent.Inventory)
 ? cargoEvent.Inventory.map(i => `
 <div class="box">
 <b>${i.Name}</b><br>
-Qty: ${i.Count}
+Count: ${i.Count}
 </div>
 `).join("")
-: "No Cargo"
+: "NO DATA"
 }
 
 </div>
@@ -367,16 +379,29 @@ Qty: ${i.Count}
 // FLEET CARRIER
 const fc = data.fleetcarrier || {};
 
+const cargoForSale = fc.capacity?.cargoForSale;
+const cargoNotForSale = fc.capacity?.cargoNotForSale;
+const freeSpace = fc.capacity?.freeSpace;
+
 const usedCargo =
-(fc.capacity?.cargoForSale || 0)
-+
-(fc.capacity?.cargoNotForSale || 0);
+typeof cargoForSale === "number" &&
+typeof cargoNotForSale === "number"
+? cargoForSale + cargoNotForSale
+: null;
 
 const totalCargo =
-usedCargo
-+
-(fc.capacity?.freeSpace || 0);
-
+usedCargo !== null &&
+typeof freeSpace === "number"
+? usedCargo + freeSpace
+: null;
+<p>
+<b>Carrier Cargo:</b>
+${
+usedCargo !== null && totalCargo !== null
+? `${usedCargo} / ${totalCargo}`
+: "NO DATA"
+}
+</p>
 const fleetHTML = `
 
 <div class="box">
@@ -385,21 +410,23 @@ const fleetHTML = `
 
 <p>
 <b>Name:</b>
-${hexToText(fc.name?.filteredVanityName || "")}
+${hexToText(fc.name?.filteredVanityName || "NO DATA")}
 -
-${fc.name?.callsign || "-"}
+${fc.name?.callsign || ""}
 </p>
 
 <p><b>Balance:</b> ${
-Number(fc.balance || 0).toLocaleString()
+isFinite(fc.balance)
+? Number(fc.balance).toLocaleString()
+: "NO DATA"
 }</p>
 
 <p><b>System:</b> ${
-fc.currentStarSystem || "-"
+fc.currentStarSystem || "NO DATA"
 }</p>
 
 <p><b>Docking:</b> ${
-fc.dockingAccess || "-"
+fc.dockingAccess || "NO DATA"
 }</p>
 
 <p><b>Notorious Access:</b> ${
@@ -409,23 +436,23 @@ fc.notoriousAccess ? "YES" : "NO"
 <hr>
 
 <p><b>Refuel:</b> ${
-fc.market?.services?.refuel || "-"
+fc.market?.services?.refuel || "NO DATA"
 }</p>
 
 <p><b>Repair:</b> ${
-fc.market?.services?.repair || "-"
+fc.market?.services?.repair || "NO DATA"
 }</p>
 
 <p><b>Rearm:</b> ${
-fc.market?.services?.rearm || "-"
+fc.market?.services?.rearm || "NO DATA"
 }</p>
 
 <p><b>Shipyard:</b> ${
-fc.market?.services?.shipyard || "-"
+fc.market?.services?.shipyard || "NO DATA"
 }</p>
 
 <p><b>Outfitting:</b> ${
-fc.market?.services?.outfitting || "-"
+fc.market?.services?.outfitting || "NO DATA"
 }</p>
 
 <hr>
@@ -452,10 +479,10 @@ Array.isArray(fc.cargo)
 ? fc.cargo.map(i => `
 <div class="box">
 <b>${i.commodity}</b><br>
-Qty: ${i.qty}
+Count: ${i.qty}
 </div>
 `).join("")
-: "No Cargo"
+: "NO DATA"
 }
 
 </div>
