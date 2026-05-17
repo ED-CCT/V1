@@ -215,6 +215,7 @@ if(!res.ok) return;
 
 const data = await res.json();
 
+const p = data.profile || [];
 const j = data.journal || [];
 const f = data.fleetcarrier || {};
 
@@ -317,8 +318,6 @@ return `
 <p><b>Total Count:</b> ${e.Count ?? 0}</p
 
 ${Array.isArray(e.Inventory) && e.Inventory.length ? `
-<div class="box" style="margin-top:10px;">
-<h4>Inventory</h4>
 
 ${e.Inventory.map(i => `
 <p>
@@ -326,7 +325,6 @@ ${e.Inventory.map(i => `
 </p>
 `).join("")}
 
-</div>
 ` : "<p class='small'>No inventory data</p>"}
 
 </div>
@@ -412,7 +410,6 @@ return `
 </div>
 
 <div class="box">
-<h4>Journal Events</h4>
 ${eventsHtml}
 </div>
 `;
