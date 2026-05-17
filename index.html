@@ -215,7 +215,7 @@ if(!res.ok) return;
 
 const data = await res.json();
 
-const p = data.profile || [];
+const p = data.profile || {};
 const j = data.journal || [];
 const f = data.fleetcarrier || {};
 
