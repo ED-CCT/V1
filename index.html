@@ -20,7 +20,7 @@ text-align:center;
 }
 
 .container{
-max-width:900px;
+max-width:1100px;
 padding:40px;
 }
 
@@ -50,6 +50,7 @@ background:#1b2535;
 border:none;
 color:white;
 border-radius:8px;
+box-sizing:border-box;
 }
 
 button{
@@ -87,7 +88,8 @@ background:#0b0f1a;
 padding:15px;
 border-radius:8px;
 overflow:auto;
-max-height:500px;
+white-space:pre-wrap;
+word-break:break-word;
 }
 
 .flex{
@@ -98,35 +100,34 @@ flex-wrap:wrap;
 
 .half{
 flex:1;
-min-width:300px;
+min-width:320px;
 text-align:left;
 }
 
 .box{
-padding:12px;
-margin-top:10px;
+padding:15px;
+margin-top:12px;
 background:#0b0f1a;
 border-radius:8px;
 border:1px solid #1f2a3a;
+text-align:left;
 }
 
 table{
 width:100%;
 border-collapse:collapse;
+margin-top:10px;
 }
 
-td,th{
-padding:6px;
-border-bottom:1px solid #253041;
+th,td{
+padding:8px;
+border-bottom:1px solid #1f2a3a;
 text-align:left;
 }
 
-.event{
-margin-top:10px;
-padding:10px;
-background:#111827;
-border-radius:8px;
-border:1px solid #253041;
+.eventTitle{
+color:#ff9800;
+margin-top:0;
 }
 
 </style>
@@ -184,7 +185,7 @@ Logout
 
 <div class="flex">
 
-<!-- RAW -->
+<!-- RAW JSON -->
 <div class="half">
 
 <h4>Raw JSON</h4>
@@ -232,7 +233,6 @@ if(!session) return;
 
 await loadDashboard();
 await loadProfile();
-
 }
 
 init();
@@ -274,50 +274,113 @@ document
 data.frontier
 ? "Frontier: CONNECTED ✔"
 : "Frontier: NOT CONNECTED ✖";
+}
 
+// =========================
+// PROFILE
+// =========================
+
+async function loadProfile(){
+
+const res =
+await fetch(
+API + "/data?session=" + session
+);
+
+if(!res.ok) return;
+
+const data =
+await res.json();
+
+const j =
+data.journal || [];
+
+const f =
+data.fleetcarrier || {};
+
+document
+.getElementById("profileBox")
+.classList.remove("hidden");
+
+document
+.getElementById("journalData")
+.innerText =
+JSON.stringify(data, null, 2);
+
+document
+.getElementById("profileUI")
+.innerHTML =
+renderProfile(j, f);
+}
+
+// =========================
+// HEX TO TEXT
+// =========================
+
+function hexToText(hex){
+
+if(!hex) return "";
+
+let str = "";
+
+for(let i = 0; i < hex.length; i += 2){
+
+const code =
+parseInt(
+hex.substr(i,2),
+16
+);
+
+if(!isNaN(code)){
+
+str +=
+String.fromCharCode(code);
+
+}
+}
+
+return str;
+}
+
+// =========================
+// LAST EVENT
+// =========================
+
+function getLastEvent(events, name){
+
+if(!Array.isArray(events))
+return null;
+
+for(
+let i = events.length - 1;
+i >= 0;
+i--
+){
+
+if(events[i].event === name){
+
+return events[i];
+
+}
+}
+
+return null;
 }
 
 // =========================
 // PROFILE RENDER
 // =========================
 
-function renderProfile(p, f){
+function renderProfile(j, f){
 
-const commander = p.commander || {};
-const ship = p.ship || {};
-const system = p.lastSystem || {};
-const station = p.lastStarport || {};
-const squadron = p.squadron || {};
+const loadGame =
+getLastEvent(j, "LoadGame") || {};
 
-// =========================
-// EVENTS
-// =========================
+const loadout =
+getLastEvent(j, "Loadout") || {};
 
-const events =
-Array.isArray(p.events)
-? p.events
-: Array.isArray(p)
-? p
-: [];
-
-const lastLoadGame =
-[...events]
-.reverse()
-.find(e => e.event === "LoadGame") || {};
-
-const lastLoadout =
-[...events]
-.reverse()
-.find(e => e.event === "Loadout") || {};
-
-const lastCargo =
-[...events]
-.reverse()
-.find(e => e.event === "Cargo") || {};
-
-// =========================
-// FLEET CARRIER
-// =========================
+const cargoEvent =
+getLastEvent(j, "Cargo") || {};
 
 const fcName =
 hexToText(
@@ -381,113 +444,34 @@ return `
 })
 .join("");
 
-// =========================
-// HTML
-// =========================
-
 return `
 
 <div class="box">
 
-<h4>Commander</h4>
+<h3 class="eventTitle">
+Commander
+</h3>
 
-<p><b>Name:</b> ${commander.name ?? "-"}</p>
-
-<p><b>Credits:</b>
-${Number(
-commander.credits || 0
-).toLocaleString()}
-</p>
-
-<p><b>Alive:</b>
-${commander.alive ? "YES" : "NO"}
-</p>
-
-<p><b>Docked:</b>
-${commander.docked ? "YES" : "NO"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Ship</h4>
-
-<p><b>ID:</b> ${ship.id ?? "-"}</p>
-
-<p><b>Name:</b> ${ship.name ?? "-"}</p>
-
-<p><b>Free:</b>
-${ship.free ? "YES" : "NO"}
-</p>
-
-<p><b>Alive:</b>
-${ship.alive ? "YES" : "NO"}
-</p>
-
-<p><b>Cargo:</b>
-${ship.value?.cargo ?? 0}
-</p>
-
-<p><b>Hull:</b>
-${ship.health?.hull ?? 0}
-</p>
-
-<p><b>Shield:</b>
-${ship.health?.shield ?? 0}
-</p>
-
-<p><b>Shield Up:</b>
-${ship.health?.shieldup ? "YES" : "NO"}
-</p>
-
-<p><b>Cockpit Breached:</b>
-${ship.cockpitBreached ? "YES" : "NO"}
-</p>
-
-<p><b>Oxygen Remaining:</b>
-${ship.oxygenRemaining ?? 0}
-</p>
-
-<p><b>Station:</b>
-${ship.station?.name ?? "-"}
-</p>
-
-<p><b>System:</b>
-${ship.starsystem?.name ?? "-"}
+<p>
+<b>Name:</b>
+${loadGame.Commander ?? "-"}
 </p>
 
 <p>
-<small>
-System Address:
-${ship.starsystem?.systemaddress ?? "-"}
-</small>
+<b>Ship:</b>
+${loadGame.Ship_Localised ?? "-"}
 </p>
 
-</div>
-
-
-<div class="box">
-
-<h4>Latest LoadGame</h4>
-
-<p><b>Commander:</b>
-${lastLoadGame.Commander ?? "-"}
-</p>
-
-<p><b>Ship:</b>
-${lastLoadGame.Ship_Localised ?? "-"}
-</p>
-
-<p><b>Fuel:</b>
-${lastLoadGame.FuelLevel ?? 0}
+<p>
+<b>Fuel:</b>
+${loadGame.FuelLevel ?? 0}
 /
-${lastLoadGame.FuelCapacity ?? 0}
+${loadGame.FuelCapacity ?? 0}
 </p>
 
-<p><b>Timestamp:</b>
-${lastLoadGame.timestamp ?? "-"}
+<p>
+<b>Timestamp:</b>
+${loadGame.timestamp ?? "-"}
 </p>
 
 </div>
@@ -495,53 +479,38 @@ ${lastLoadGame.timestamp ?? "-"}
 
 <div class="box">
 
-<h4>Latest Loadout</h4>
+<h3 class="eventTitle">
+Loadout
+</h3>
 
-<p><b>Ship Ident:</b>
-${lastLoadout.ShipIdent ?? "-"}
+<p>
+<b>Ship Ident:</b>
+${loadout.ShipIdent ?? "-"}
 </p>
 
-<p><b>Hull Value:</b>
+<p>
+<b>Hull Value:</b>
 ${Number(
-lastLoadout.HullValue || 0
+loadout.HullValue || 0
 ).toLocaleString()}
 </p>
 
-<p><b>Modules Value:</b>
+<p>
+<b>Modules Value:</b>
 ${Number(
-lastLoadout.ModulesValue || 0
+loadout.ModulesValue || 0
 ).toLocaleString()}
 </p>
 
-<p><b>Cargo Capacity:</b>
-${lastLoadout.CargoCapacity ?? 0}
+<p>
+<b>Cargo Capacity:</b>
+${loadout.CargoCapacity ?? 0}
 </p>
 
-<p><b>Jump Range:</b>
-${lastLoadout.MaxJumpRange ?? 0}
-</p>
-
-<p><b>Timestamp:</b>
-${lastLoadout.timestamp ?? "-"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Latest Cargo Event</h4>
-
-<p><b>Vessel:</b>
-${lastCargo.Vessel ?? "-"}
-</p>
-
-<p><b>Total Cargo:</b>
-${lastCargo.Count ?? 0}
-</p>
-
-<p><b>Timestamp:</b>
-${lastCargo.timestamp ?? "-"}
+<p>
+<b>Max Jump Range:</b>
+${loadout.MaxJumpRange ?? 0}
+ ly
 </p>
 
 </div>
@@ -549,41 +518,23 @@ ${lastCargo.timestamp ?? "-"}
 
 <div class="box">
 
-<h4>Last Known Location</h4>
+<h3 class="eventTitle">
+Cargo
+</h3>
 
-<p><b>System:</b>
-${system.name ?? "-"}
+<p>
+<b>Vessel:</b>
+${cargoEvent.Vessel ?? "-"}
 </p>
 
-<p><b>System ID:</b>
-${system.id ?? "-"}
+<p>
+<b>Total Items:</b>
+${cargoEvent.Count ?? 0}
 </p>
 
-<p><b>Starport:</b>
-${station.name ?? "-"}
-</p>
-
-<p><b>Starport ID:</b>
-${station.id ?? "-"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Squadron</h4>
-
-<p><b>Name:</b>
-${squadron.name ?? "-"}
-</p>
-
-<p><b>Tag:</b>
-${squadron.tag ?? "-"}
-</p>
-
-<p><b>Rank:</b>
-${squadron.rank ?? "-"}
+<p>
+<b>Timestamp:</b>
+${cargoEvent.timestamp ?? "-"}
 </p>
 
 </div>
@@ -591,43 +542,54 @@ ${squadron.rank ?? "-"}
 
 <div class="box">
 
-<h4>Fleet Carrier</h4>
+<h3 class="eventTitle">
+Fleet Carrier
+</h3>
 
-<p><b>Callsign:</b>
+<p>
+<b>Callsign:</b>
 ${f?.name?.callsign ?? "-"}
 </p>
 
-<p><b>Name:</b>
+<p>
+<b>Name:</b>
 ${fcName || "-"}
 </p>
 
-<p><b>System:</b>
+<p>
+<b>System:</b>
 ${f?.currentStarSystem ?? "-"}
 </p>
 
-<p><b>Balance:</b>
+<p>
+<b>Balance:</b>
 ${Number(
 f?.balance || 0
 ).toLocaleString()}
 </p>
 
-<p><b>Fuel:</b>
+<p>
+<b>Fuel:</b>
 ${f?.fuel ?? 0}
 </p>
 
-<p><b>Docking Access:</b>
+<p>
+<b>Docking Access:</b>
 ${f?.dockingAccess ?? "-"}
 </p>
 
-<p><b>Notorious Access:</b>
+<p>
+<b>Notorious Access:</b>
 ${f?.notoriousAccess ? "YES" : "NO"}
 </p>
 
-<p><b>Free Cargo Space:</b>
+<p>
+<b>Free Cargo Space:</b>
 ${f?.capacity?.freeSpace ?? 0}
 </p>
 
-<p><b>Stored Cargo:</b>
+<p>
+<b>Stored Cargo:</b>
 ${f?.capacity?.cargoNotForSale ?? 0}
 </p>
 
@@ -636,7 +598,9 @@ ${f?.capacity?.cargoNotForSale ?? 0}
 
 <div class="box">
 
-<h4>Fleet Carrier Services</h4>
+<h3 class="eventTitle">
+Fleet Carrier Services
+</h3>
 
 ${servicesHtml || "<p>No services</p>"}
 
@@ -645,13 +609,15 @@ ${servicesHtml || "<p>No services</p>"}
 
 <div class="box">
 
-<h4>Fleet Carrier Cargo</h4>
+<h3 class="eventTitle">
+Fleet Carrier Cargo
+</h3>
 
-<table style="width:100%;border-collapse:collapse;">
+<table>
 
 <tr>
-<th align="left">Commodity</th>
-<th align="left">Qty</th>
+<th>Commodity</th>
+<th>Qty</th>
 </tr>
 
 ${cargoHtml || `
@@ -711,7 +677,6 @@ document
 .innerText =
 data.error ||
 "Account created ✔";
-
 }
 
 // =========================
@@ -759,7 +724,6 @@ document
 data.error;
 
 return;
-
 }
 
 sessionStorage.setItem(
@@ -772,7 +736,6 @@ data.session;
 
 await loadDashboard();
 await loadProfile();
-
 }
 
 // =========================
@@ -803,12 +766,10 @@ document
 data.error;
 
 return;
-
 }
 
 location.href =
 data.url;
-
 }
 
 // =========================
@@ -822,7 +783,6 @@ sessionStorage.removeItem(
 );
 
 location.reload();
-
 }
 
 </script>
