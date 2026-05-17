@@ -226,7 +226,7 @@ document.getElementById("journalData").innerText =
 JSON.stringify(j, null, 2);
 
 document.getElementById("profileUI").innerHTML =
-renderProfile(j, f);
+renderProfile(j, f, p);
 }
 
 // =========================
@@ -340,13 +340,13 @@ return "";
 // PROFILE RENDER
 // =========================
 
-function renderProfile(j, f){
+function renderProfile(j, f, p){
 
-const commander = j.commander || {};
-const ship = j.ship || {};
-const system = j.lastSystem || {};
-const station = j.lastStarport || {};
-const squadron = j.squadron || {};
+const commander = p.commander || {};
+const ship = p.ship || {};
+const system = p.lastSystem || {};
+const station = p.lastStarport || {};
+const squadron = p.squadron || {};
 
 const fcName =
 hexToText(f?.name?.vanityName || "");
