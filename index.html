@@ -89,6 +89,22 @@ background:#0b0f1a;
 border-radius:8px;
 border:1px solid #1f2a3a;
 }
+hr{
+border:none;
+border-top:1px solid #253041;
+margin:15px 0;
+}
+
+h4{
+color:#ff9800;
+margin-bottom:10px;
+}
+
+#profileUI{
+display:flex;
+flex-direction:column;
+gap:15px;
+}
 </style>
 </head>
 
@@ -178,17 +194,7 @@ document.getElementById("frontierStatus").innerText =
 data.frontier ? "Frontier: CONNECTED ✔" : "Frontier: NOT CONNECTED ✖";
 }
 
-// PROFILE
-async function loadProfile(){
-const res = await fetch(API + "/data?session=" + session);
-if(!res.ok) return;
 
-const data = await res.json();
-
-document.getElementById("profileBox").classList.remove("hidden");
-document.getElementById("journalData").innerText =
-JSON.stringify(data, null, 2);
-}
 
 // HEX helper
 function hexToText(hex){
@@ -205,7 +211,265 @@ str += String.fromCharCode(code);
 
 return str;
 }
+async function loadProfile(){
 
+const res = await fetch(API + "/data?session=" + session);
+if(!res.ok) return;
+
+const data = await res.json();
+
+document.getElementById("profileBox").classList.remove("hidden");
+
+document.getElementById("journalData").innerText =
+JSON.stringify(data, null, 2);
+
+// EVENTS
+const events = Array.isArray(data.events)
+? data.events
+: [];
+
+const locationEvent =
+events.find(e => e.Event === "Location") || {};
+
+const loadGameEvent =
+events.find(e => e.Event === "LoadGame") || {};
+
+const loadoutEvent =
+events.find(e => e.Event === "Loadout") || {};
+
+const cargoEvent =
+events.find(e => e.Event === "Cargo") || {};
+
+// COMMANDER
+const commanderHTML = `
+
+<div class="box">
+
+<h4>Commander</h4>
+
+<p><b>Name:</b> ${data.commander?.name || "-"}</p>
+
+<p>
+<b>Squadron:</b>
+${data.squadron?.name || "-"}
+[${data.squadron?.tag || "-"}]
+</p>
+
+<p><b>Rank:</b> ${data.squadron?.rank || "-"}</p>
+
+<p><b>Credits:</b> ${
+Number(data.commander?.credits || 0).toLocaleString()
+}</p>
+
+<p><b>Alive:</b> ${
+data.ship?.alive ? "YES" : "NO"
+}</p>
+
+<hr>
+
+<p><b>System:</b> ${locationEvent.StarSystem || "-"}</p>
+
+<p><b>Security:</b> ${
+locationEvent.SystemSecurity_Localised || "-"
+}</p>
+
+<p><b>Body:</b> ${locationEvent.Body || "-"}</p>
+
+<p><b>Station Type:</b> ${
+locationEvent.StationType || "-"
+}</p>
+
+<p><b>Station:</b> ${
+locationEvent.StationName || "-"
+}</p>
+
+<hr>
+
+<p><b>Game Mode:</b> ${
+loadGameEvent.GameMode || "-"
+}</p>
+
+<p><b>Ship:</b> ${
+loadGameEvent.Ship_Localised || "-"
+}</p>
+
+<hr>
+
+<p>
+<b>Ship Name:</b>
+${loadoutEvent.ShipName || "-"}
+-
+${loadoutEvent.ShipIdent || "-"}
+</p>
+
+<p><b>Hull:</b> ${
+Math.round((loadoutEvent.HullHealth || 0) * 100)
+}%</p>
+
+<p><b>Shield:</b> ${
+data.ship?.health?.shield || 0
+}%</p>
+
+<p><b>Docked:</b> ${
+data.commander?.docked ? "YES" : "NO"
+}</p>
+
+<p><b>Cockpit Breached:</b> ${
+data.ship?.cockpitBreached ? "YES" : "NO"
+}</p>
+
+<p><b>Oxygen:</b> ${
+data.ship?.oxygenRemaining || 0
+}</p>
+
+<p>
+<b>Fuel:</b>
+${loadGameEvent.FuelLevel || 0}
+/
+${loadGameEvent.FuelCapacity || 0}
+</p>
+
+<p><b>Jump Range:</b> ${
+loadoutEvent.MaxJumpRange || 0
+}</p>
+
+<p>
+<b>Cargo:</b>
+${cargoEvent.Count || 0}
+/
+${loadoutEvent.CargoCapacity || 0}
+</p>
+
+</div>
+`;
+
+// CARGO
+const cargoHTML = `
+
+<div class="box">
+
+<h4>Ship Cargo</h4>
+
+${
+Array.isArray(cargoEvent.Inventory)
+? cargoEvent.Inventory.map(i => `
+<div class="box">
+<b>${i.Name}</b><br>
+Qty: ${i.Count}
+</div>
+`).join("")
+: "No Cargo"
+}
+
+</div>
+`;
+
+// FLEET CARRIER
+const fc = data.fleetcarrier || {};
+
+const usedCargo =
+(fc.capacity?.cargoForSale || 0)
++
+(fc.capacity?.cargoNotForSale || 0);
+
+const totalCargo =
+usedCargo
++
+(fc.capacity?.freeSpace || 0);
+
+const fleetHTML = `
+
+<div class="box">
+
+<h4>Fleet Carrier</h4>
+
+<p>
+<b>Name:</b>
+${hexToText(fc.name?.filteredVanityName || "")}
+-
+${fc.name?.callsign || "-"}
+</p>
+
+<p><b>Balance:</b> ${
+Number(fc.balance || 0).toLocaleString()
+}</p>
+
+<p><b>System:</b> ${
+fc.currentStarSystem || "-"
+}</p>
+
+<p><b>Docking:</b> ${
+fc.dockingAccess || "-"
+}</p>
+
+<p><b>Notorious Access:</b> ${
+fc.notoriousAccess ? "YES" : "NO"
+}</p>
+
+<hr>
+
+<p><b>Refuel:</b> ${
+fc.market?.services?.refuel || "-"
+}</p>
+
+<p><b>Repair:</b> ${
+fc.market?.services?.repair || "-"
+}</p>
+
+<p><b>Rearm:</b> ${
+fc.market?.services?.rearm || "-"
+}</p>
+
+<p><b>Shipyard:</b> ${
+fc.market?.services?.shipyard || "-"
+}</p>
+
+<p><b>Outfitting:</b> ${
+fc.market?.services?.outfitting || "-"
+}</p>
+
+<hr>
+
+<p>
+<b>Carrier Cargo:</b>
+${usedCargo}
+/
+${totalCargo}
+</p>
+
+</div>
+`;
+
+// FLEET CARGO
+const fleetCargoHTML = `
+
+<div class="box">
+
+<h4>Fleet Carrier Cargo</h4>
+
+${
+Array.isArray(fc.cargo)
+? fc.cargo.map(i => `
+<div class="box">
+<b>${i.commodity}</b><br>
+Qty: ${i.qty}
+</div>
+`).join("")
+: "No Cargo"
+}
+
+</div>
+`;
+
+// RENDER
+document.getElementById("profileUI").innerHTML = `
+${commanderHTML}
+${cargoHTML}
+${fleetHTML}
+${fleetCargoHTML}
+`;
+
+}
 // AUTH
 async function register(){
 const email = document.getElementById("email").value.trim().toLowerCase();
