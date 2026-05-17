@@ -6,6 +6,7 @@
 <title>ED-CCT</title>
 
 <style>
+
 body{
 margin:0;
 background:#0b0f1a;
@@ -19,7 +20,7 @@ text-align:center;
 }
 
 .container{
-max-width:1200px;
+max-width:900px;
 padding:40px;
 width:100%;
 }
@@ -88,7 +89,7 @@ background:#0b0f1a;
 padding:15px;
 border-radius:8px;
 overflow:auto;
-max-height:600px;
+max-height:500px;
 }
 
 .flex{
@@ -99,7 +100,7 @@ flex-wrap:wrap;
 
 .half{
 flex:1;
-min-width:350px;
+min-width:300px;
 text-align:left;
 }
 
@@ -111,55 +112,6 @@ border-radius:8px;
 border:1px solid #1f2a3a;
 }
 
-.eventCard{
-padding:14px;
-margin-top:12px;
-background:#111827;
-border-radius:10px;
-border:1px solid #253041;
-}
-
-.eventTitle{
-color:#ff9800;
-font-size:18px;
-margin-bottom:10px;
-font-weight:bold;
-}
-
-.eventGrid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:10px;
-}
-
-.eventItem{
-background:#0b0f1a;
-padding:10px;
-border-radius:8px;
-border:1px solid #1f2a3a;
-}
-
-.eventKey{
-font-size:12px;
-color:#9fb3c8;
-margin-bottom:5px;
-}
-
-.eventValue{
-font-size:15px;
-word-break:break-word;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-th,td{
-padding:8px;
-border-bottom:1px solid #1f2a3a;
-text-align:left;
-}
 </style>
 </head>
 
@@ -209,7 +161,7 @@ Logout
 <!-- PROFILE -->
 <div id="profileBox" class="card hidden">
 
-<h3>Frontier Profile</h3>
+<h3>Latest Journal Events</h3>
 
 <div class="flex">
 
@@ -277,9 +229,11 @@ const data = await res.json();
 
 if(!data.logged) return;
 
-document.getElementById("authBox").classList.add("hidden");
+document.getElementById("authBox")
+.classList.add("hidden");
 
-document.getElementById("dashboard").classList.remove("hidden");
+document.getElementById("dashboard")
+.classList.remove("hidden");
 
 document.getElementById("userEmail").innerText =
 "Logged as: " + data.email;
@@ -304,8 +258,8 @@ if(!res.ok) return;
 
 const data = await res.json();
 
-const j = data.journal || {};
-const f = data.fleetcarrier || {};
+// journal musi być tablicą eventów
+const j = data.journal || [];
 
 document.getElementById("profileBox")
 .classList.remove("hidden");
@@ -314,36 +268,9 @@ document.getElementById("profileBox")
 document.getElementById("journalData").innerText =
 JSON.stringify(j, null, 2);
 
-// UI
+// GUI
 document.getElementById("profileUI").innerHTML =
-renderProfile(j, f);
-}
-
-
-// =========================
-// HEX TO TEXT
-// =========================
-
-function hexToText(hex){
-
-if(!hex) return "";
-
-let str = "";
-
-for(let i = 0; i < hex.length; i += 2){
-
-const code =
-parseInt(
-hex.substr(i,2),
-16
-);
-
-if(!isNaN(code)){
-str += String.fromCharCode(code);
-}
-}
-
-return str;
+renderLatestEvents(j);
 }
 
 
@@ -361,32 +288,12 @@ for(const ev of events){
 
 if(!ev.event) continue;
 
+// zawsze nadpisujemy
+// dzięki temu zostaje ostatni event
 latest[ev.event] = ev;
 }
 
 return latest;
-}
-
-
-// =========================
-// FORMAT VALUE
-// =========================
-
-function formatValue(value){
-
-if(value === null || value === undefined){
-return "-";
-}
-
-if(typeof value === "boolean"){
-return value ? "YES" : "NO";
-}
-
-if(typeof value === "number"){
-return Number(value).toLocaleString();
-}
-
-return value;
 }
 
 
@@ -396,43 +303,43 @@ return value;
 
 function renderLatestEvents(events){
 
-const latestEvents = getLatestEvents(events);
+const latest = getLatestEvents(events);
 
-const html = Object.values(latestEvents)
+return Object.values(latest)
 .map(ev => {
 
-const fields = Object.entries(ev)
-.filter(([key]) => key !== "event")
-.map(([key,value]) => `
-<div class="eventItem">
-<div class="eventKey">${key}</div>
-<div class="eventValue">${formatValue(value)}</div>
-</div>
-`).join("");
 
-return `
-<div class="eventCard">
+// =========================
+// LOADGAME
+// =========================
 
-<div class="eventTitle">
-${ev.event}
-</div>
-
-<div class="eventGrid">
-${fields}
-</div>
-
-</div>
-`;
-
-}).join("");
+if(ev.event === "LoadGame"){
 
 return `
 
 <div class="box">
 
-<h4>Latest Journal Events</h4>
+<h4>LoadGame</h4>
 
-${html || "<p>No events</p>"}
+<p><b>Commander:</b>
+${ev.Commander ?? "-"}
+</p>
+
+<p><b>Ship:</b>
+${ev.Ship_Localised ?? "-"}
+</p>
+
+<p><b>Fuel Level:</b>
+${ev.FuelLevel ?? 0}
+</p>
+
+<p><b>Fuel Capacity:</b>
+${ev.FuelCapacity ?? 0}
+</p>
+
+<p><b>Timestamp:</b>
+${ev.timestamp ?? "-"}
+</p>
 
 </div>
 
@@ -441,293 +348,84 @@ ${html || "<p>No events</p>"}
 
 
 // =========================
-// PROFILE RENDER
+// LOADOUT
 // =========================
 
-function renderProfile(p, f){
-
-const commander = p.commander || {};
-const ship = p.ship || {};
-const system = p.lastSystem || {};
-const station = p.lastStarport || {};
-const squadron = p.squadron || {};
-
-const events =
-Array.isArray(p)
-? p
-: (
-p.events ||
-p.journal ||
-[]
-);
-
-const fcName =
-hexToText(
-f?.name?.vanityName || ""
-);
-
-const cargo =
-Array.isArray(f?.cargo)
-? f.cargo
-: [];
-
-const cargoHtml =
-cargo.map(c => `
-<tr>
-<td>${c.locName || c.commodity}</td>
-<td>${c.qty ?? 0}</td>
-</tr>
-`).join("");
-
-const services =
-f?.market?.services || {};
-
-const selectedServices = {
-
-carrierfuel:
-"Carrier Fuel",
-
-shipyard:
-"Shipyard",
-
-outfitting:
-"Outfitting",
-
-refuel:
-"Refuel",
-
-repair:
-"Repair",
-
-rearm:
-"Rearm"
-
-};
-
-const servicesHtml =
-Object.entries(selectedServices)
-.map(([key,label]) => {
-
-const value =
-services[key];
-
-if(value === undefined)
-return "";
+if(ev.event === "Loadout"){
 
 return `
-<p>
-<b>${label}:</b> ${value}
+
+<div class="box">
+
+<h4>Loadout</h4>
+
+<p><b>Ship Ident:</b>
+${ev.ShipIdent ?? "-"}
 </p>
+
+<p><b>Hull Value:</b>
+${Number(
+ev.HullValue ?? 0
+).toLocaleString()}
+</p>
+
+<p><b>Modules Value:</b>
+${Number(
+ev.ModulesValue ?? 0
+).toLocaleString()}
+</p>
+
+<p><b>Cargo Capacity:</b>
+${ev.CargoCapacity ?? 0}
+</p>
+
+<p><b>Max Jump Range:</b>
+${ev.MaxJumpRange ?? 0}
+</p>
+
+<p><b>Timestamp:</b>
+${ev.timestamp ?? "-"}
+</p>
+
+</div>
+
 `;
+}
+
+
+// =========================
+// CARGO
+// =========================
+
+if(ev.event === "Cargo"){
+
+return `
+
+<div class="box">
+
+<h4>Cargo</h4>
+
+<p><b>Vessel:</b>
+${ev.Vessel ?? "-"}
+</p>
+
+<p><b>Count:</b>
+${ev.Count ?? 0}
+</p>
+
+<p><b>Timestamp:</b>
+${ev.timestamp ?? "-"}
+</p>
+
+</div>
+
+`;
+}
+
+return "";
 
 })
 .join("");
-
-return `
-
-${renderLatestEvents(events)}
-
-<div class="box">
-
-<h4>Commander</h4>
-
-<p><b>Name:</b> ${commander.name ?? "-"}</p>
-
-<p><b>Credits:</b>
-${Number(
-commander.credits || 0
-).toLocaleString()}
-</p>
-
-<p><b>Alive:</b>
-${commander.alive ? "YES" : "NO"}
-</p>
-
-<p><b>Docked:</b>
-${commander.docked ? "YES" : "NO"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Ship</h4>
-
-<p><b>ID:</b> ${ship.id ?? "-"}</p>
-
-<p><b>Name:</b> ${ship.name ?? "-"}</p>
-
-<p><b>Free:</b>
-${ship.free ? "YES" : "NO"}
-</p>
-
-<p><b>Alive:</b>
-${ship.alive ? "YES" : "NO"}
-</p>
-
-<p><b>Cargo:</b>
-${ship.value?.cargo ?? 0}
-</p>
-
-<p><b>Hull:</b>
-${ship.health?.hull ?? 0}
-</p>
-
-<p><b>Shield:</b>
-${ship.health?.shield ?? 0}
-</p>
-
-<p><b>Shield Up:</b>
-${ship.health?.shieldup ? "YES" : "NO"}
-</p>
-
-<p><b>Cockpit Breached:</b>
-${ship.cockpitBreached ? "YES" : "NO"}
-</p>
-
-<p><b>Oxygen Remaining:</b>
-${ship.oxygenRemaining ?? 0}
-</p>
-
-<p><b>Station:</b>
-${ship.station?.name ?? "-"}
-</p>
-
-<p><b>System:</b>
-${ship.starsystem?.name ?? "-"}
-</p>
-
-<p>
-<small>
-System Address:
-${ship.starsystem?.systemaddress ?? "-"}
-</small>
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Last Known Location</h4>
-
-<p><b>System:</b>
-${system.name ?? "-"}
-</p>
-
-<p><b>System ID:</b>
-${system.id ?? "-"}
-</p>
-
-<p><b>Starport:</b>
-${station.name ?? "-"}
-</p>
-
-<p><b>Starport ID:</b>
-${station.id ?? "-"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Squadron</h4>
-
-<p><b>Name:</b>
-${squadron.name ?? "-"}
-</p>
-
-<p><b>Tag:</b>
-${squadron.tag ?? "-"}
-</p>
-
-<p><b>Rank:</b>
-${squadron.rank ?? "-"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Fleet Carrier</h4>
-
-<p><b>Callsign:</b>
-${f?.name?.callsign ?? "-"}
-</p>
-
-<p><b>Name:</b>
-${fcName || "-"}
-</p>
-
-<p><b>System:</b>
-${f?.currentStarSystem ?? "-"}
-</p>
-
-<p><b>Balance:</b>
-${Number(
-f?.balance || 0
-).toLocaleString()}
-</p>
-
-<p><b>Fuel:</b>
-${f?.fuel ?? 0}
-</p>
-
-<p><b>Docking Access:</b>
-${f?.dockingAccess ?? "-"}
-</p>
-
-<p><b>Notorious Access:</b>
-${f?.notoriousAccess ? "YES" : "NO"}
-</p>
-
-<p><b>Free Cargo Space:</b>
-${f?.capacity?.freeSpace ?? 0}
-</p>
-
-<p><b>Stored Cargo:</b>
-${f?.capacity?.cargoNotForSale ?? 0}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Fleet Carrier Services</h4>
-
-${servicesHtml || "<p>No services</p>"}
-
-</div>
-
-
-<div class="box">
-
-<h4>Fleet Carrier Cargo</h4>
-
-<table>
-
-<tr>
-<th>Commodity</th>
-<th>Qty</th>
-</tr>
-
-${cargoHtml || `
-<tr>
-<td colspan="2">
-No cargo
-</td>
-</tr>
-`}
-
-</table>
-
-</div>
-
-`;
 }
 
 
@@ -747,15 +445,20 @@ const password =
 document.getElementById("password")
 .value;
 
-const res = await fetch(API + "/register",{
+const res =
+await fetch(API + "/register",{
+
 method:"POST",
+
 headers:{
 "Content-Type":"application/json"
 },
+
 body:JSON.stringify({
 email,
 password
 })
+
 });
 
 const data = await res.json();
@@ -781,15 +484,20 @@ const password =
 document.getElementById("password")
 .value;
 
-const res = await fetch(API + "/login",{
+const res =
+await fetch(API + "/login",{
+
 method:"POST",
+
 headers:{
 "Content-Type":"application/json"
 },
+
 body:JSON.stringify({
 email,
 password
 })
+
 });
 
 const data = await res.json();
@@ -820,10 +528,13 @@ await loadProfile();
 
 async function connectFrontier(){
 
-const res = await fetch(API + "/frontier/start",{
+const res =
+await fetch(API + "/frontier/start",{
+
 headers:{
 Authorization:"Bearer " + session
 }
+
 });
 
 const data = await res.json();
