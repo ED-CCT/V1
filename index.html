@@ -288,14 +288,17 @@ return Array.from(map.values())
 function renderEvents(events){
 
 if(!events.length){
-return "<p>No events</p>";
+return "<p>No matching events</p>";
 }
 
 return events.map(e => `
 <div class="box">
-<p><b>Event:</b> ${e.event}</p>
-<p><b>Time:</b> ${e.timestamp || "-"}</p>
+
+<p><b>${e.event}</b></p>
+<p class="small">${e.timestamp || "-"}</p>
+
 <pre>${JSON.stringify(e, null, 2)}</pre>
+
 </div>
 `).join("");
 }
