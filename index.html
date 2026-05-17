@@ -271,6 +271,8 @@ for(const e of events){
 
 if(!e || !allowed.has(e.event)) continue;
 
+if(e.event === "Cargo" && e.Vessel !== "Ship") continue;
+
 map.set(e.event, e);
 }
 
@@ -293,7 +295,6 @@ return `
 <p><b>Ship:</b> ${e.Ship_Localised ?? "-"}</p>
 <p><b>Credits:</b> ${e.Credits ?? 0}</p>
 <p><b>Fuel:</b> ${e.FuelLevel ?? 0} / ${e.FuelCapacity ?? 0}</p>
-<p class="small">${e.timestamp ?? "-"}</p>
 </div>
 `;
 }
