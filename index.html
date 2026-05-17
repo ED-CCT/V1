@@ -122,13 +122,8 @@ border:1px solid #1f2a3a;
 
 <p id="frontierStatus">Checking Frontier...</p>
 
-<button onclick="connectFrontier()">
-Connect Frontier
-</button>
-
-<button class="secondary" onclick="logout()">
-Logout
-</button>
+<button onclick="connectFrontier()">Connect Frontier</button>
+<button class="secondary" onclick="logout()">Logout</button>
 
 <div id="dashStatus" class="status"></div>
 
@@ -141,13 +136,11 @@ Logout
 
 <div class="flex">
 
-<!-- RAW -->
 <div class="half">
 <h4>Raw JSON</h4>
 <pre id="journalData">Loading...</pre>
 </div>
 
-<!-- UI -->
 <div class="half">
 <h4>Structured View</h4>
 <div id="profileUI"></div>
@@ -222,20 +215,22 @@ if(!res.ok) return;
 
 const data = await res.json();
 
-const j = data.journal || {};
+const j = data.journal || [];
 const f = data.fleetcarrier || {};
 
 document.getElementById("profileBox")
 .classList.remove("hidden");
 
-// RAW JSON
 document.getElementById("journalData").innerText =
 JSON.stringify(j, null, 2);
 
-// UI
 document.getElementById("profileUI").innerHTML =
 renderProfile(j, f);
 }
+
+// =========================
+// HEX
+// =========================
 
 function hexToText(hex){
 
@@ -257,14 +252,13 @@ return str;
 }
 
 // =========================
-// JOURNAL EVENTS (LATEST PER TYPE)
+// EVENTS FILTER
 // =========================
 
 function getLastEvents(events){
 
 if(!Array.isArray(events)) return [];
 
-// tylko interesujące eventy
 const allowed = new Set([
 "LoadGame",
 "Loadout",
@@ -277,12 +271,10 @@ for(const e of events){
 
 if(!e || !allowed.has(e.event)) continue;
 
-// nadpisuje = zostaje ostatni
-map.set(e.event, e);
+map.set(e.event, e); // override -> last wins
 }
 
-return Array.from(map.values())
-.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
+return Array.from(map.values());
 }
 
 function renderEvents(events){
@@ -293,12 +285,9 @@ return "<p>No matching events</p>";
 
 return events.map(e => `
 <div class="box">
-
 <p><b>${e.event}</b></p>
 <p class="small">${e.timestamp || "-"}</p>
-
 <pre>${JSON.stringify(e, null, 2)}</pre>
-
 </div>
 `).join("");
 }
@@ -307,21 +296,19 @@ return events.map(e => `
 // PROFILE RENDER
 // =========================
 
-function renderProfile(p, f){
+function renderProfile(j, f){
 
-const commander = p.commander || {};
-const ship = p.ship || {};
-const system = p.lastSystem || {};
-const station = p.lastStarport || {};
-const squadron = p.squadron || {};
+const commander = j.commander || {};
+const ship = j.ship || {};
+const system = j.lastSystem || {};
+const station = j.lastStarport || {};
+const squadron = j.squadron || {};
 
 const fcName =
 hexToText(f?.name?.vanityName || "");
 
 const cargo =
-Array.isArray(f?.cargo)
-? f.cargo
-: [];
+Array.isArray(f?.cargo) ? f.cargo : [];
 
 const cargoHtml =
 cargo.map(c => `
@@ -331,8 +318,7 @@ cargo.map(c => `
 </tr>
 `).join("");
 
-const services =
-f?.market?.services || {};
+const services = f?.market?.services || {};
 
 const selectedServices = {
 carrierfuel:"Carrier Fuel",
@@ -346,154 +332,48 @@ rearm:"Rearm"
 const servicesHtml =
 Object.entries(selectedServices)
 .map(([key,label]) => {
-
 const value = services[key];
-
 if(value === undefined) return "";
-
-return `
-<p><b>${label}:</b> ${value}</p>
-`;
-
+return `<p><b>${label}:</b> ${value}</p>`;
 }).join("");
 
-// EVENTS (only latest per event type)
-const events = getLastEvents(p);
+// ✔ ONLY HERE FIX IS IMPORTANT
+const events = getLastEvents(j);
 
 const eventsHtml = renderEvents(events);
 
 return `
-
 <div class="box">
-
 <h4>Commander</h4>
-
 <p><b>Name:</b> ${commander.name ?? "-"}</p>
-
-<p><b>Credits:</b>
-${Number(commander.credits || 0).toLocaleString()}
-</p>
-
+<p><b>Credits:</b> ${Number(commander.credits || 0).toLocaleString()}</p>
 <p><b>Alive:</b> ${commander.alive ? "YES" : "NO"}</p>
-
 <p><b>Docked:</b> ${commander.docked ? "YES" : "NO"}</p>
-
 </div>
 
 <div class="box">
-
 <h4>Ship</h4>
-
 <p><b>ID:</b> ${ship.id ?? "-"}</p>
 <p><b>Name:</b> ${ship.name ?? "-"}</p>
 <p><b>Free:</b> ${ship.free ? "YES" : "NO"}</p>
 <p><b>Alive:</b> ${ship.alive ? "YES" : "NO"}</p>
-
 <p><b>Cargo:</b> ${ship.value?.cargo ?? 0}</p>
 <p><b>Hull:</b> ${ship.health?.hull ?? 0}</p>
 <p><b>Shield:</b> ${ship.health?.shield ?? 0}</p>
 <p><b>Shield Up:</b> ${ship.health?.shieldup ? "YES" : "NO"}</p>
-
 <p><b>Cockpit Breached:</b> ${ship.cockpitBreached ? "YES" : "NO"}</p>
-<p><b>Oxygen Remaining:</b> ${ship.oxygenRemaining ?? 0}</p>
-
-<p><b>Station:</b> ${ship.station?.name ?? "-"}</p>
-<p><b>System:</b> ${ship.starsystem?.name ?? "-"}</p>
-
-<p><small>System Address: ${ship.starsystem?.systemaddress ?? "-"}</small></p>
-
+<p><b>Oxygen:</b> ${ship.oxygenRemaining ?? 0}</p>
 </div>
 
 <div class="box">
-
-<h4>Last Known Location</h4>
-
-<p><b>System:</b> ${system.name ?? "-"}</p>
-<p><b>System ID:</b> ${system.id ?? "-"}</p>
-
-<p><b>Starport:</b> ${station.name ?? "-"}</p>
-<p><b>Starport ID:</b> ${station.id ?? "-"}</p>
-
-</div>
-
-<div class="box">
-
-<h4>Squadron</h4>
-
-<p><b>Name:</b> ${squadron.name ?? "-"}</p>
-<p><b>Tag:</b> ${squadron.tag ?? "-"}</p>
-<p><b>Rank:</b> ${squadron.rank ?? "-"}</p>
-
-</div>
-
-<div class="box">
-
-<h4>Fleet Carrier</h4>
-
-<p><b>Callsign:</b> ${f?.name?.callsign ?? "-"}</p>
-<p><b>Name:</b> ${fcName || "-"}</p>
-
-<p><b>System:</b> ${f?.currentStarSystem ?? "-"}</p>
-
-<p><b>Balance:</b>
-${Number(f?.balance || 0).toLocaleString()}
-</p>
-
-<p><b>Fuel:</b> ${f?.fuel ?? 0}</p>
-<p><b>Docking Access:</b> ${f?.dockingAccess ?? "-"}</p>
-
-<p><b>Notorious Access:</b>
-${f?.notoriousAccess ? "YES" : "NO"}
-</p>
-
-<p><b>Free Cargo Space:</b>
-${f?.capacity?.freeSpace ?? 0}
-</p>
-
-<p><b>Stored Cargo:</b>
-${f?.capacity?.cargoNotForSale ?? 0}
-</p>
-
-</div>
-
-<div class="box">
-
-<h4>Fleet Carrier Services</h4>
-${servicesHtml || "<p>No services</p>"}
-
-</div>
-
-<div class="box">
-
-<h4>Fleet Carrier Cargo</h4>
-
-<table style="width:100%;border-collapse:collapse;">
-
-<tr>
-<th align="left">Commodity</th>
-<th align="left">Qty</th>
-</tr>
-
-${cargoHtml || `
-<tr><td colspan="2">No cargo</td></tr>
-`}
-
-</table>
-
-</div>
-
-<div class="box">
-
-<h4>Journal Events (Latest per type)</h4>
+<h4>Journal Events</h4>
 ${eventsHtml}
-
 </div>
-
 `;
 }
 
 // =========================
-// REGISTER
+// AUTH
 // =========================
 
 async function register(){
@@ -515,10 +395,6 @@ const data = await res.json();
 document.getElementById("authStatus").innerText =
 data.error || "Account created ✔";
 }
-
-// =========================
-// LOGIN
-// =========================
 
 async function login(){
 
@@ -555,9 +431,7 @@ await loadProfile();
 async function connectFrontier(){
 
 const res = await fetch(API + "/frontier/start",{
-headers:{
-Authorization:"Bearer " + session
-}
+headers:{ Authorization:"Bearer " + session }
 });
 
 const data = await res.json();
