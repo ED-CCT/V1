@@ -146,11 +146,6 @@ gap:15px;
 <div class="flex">
 
 <div class="half">
-<h4>Raw JSON</h4>
-<pre id="journalData">Loading...</pre>
-</div>
-
-<div class="half">
 <h4>Structured View</h4>
 <div id="profileUI"></div>
 </div>
@@ -220,8 +215,6 @@ const data = await res.json();
 
 document.getElementById("profileBox").classList.remove("hidden");
 
-document.getElementById("journalData").innerText =
-JSON.stringify(data, null, 2);
 
 // EVENTS
 const events = Array.isArray(data.events)
@@ -394,14 +387,7 @@ usedCargo !== null &&
 typeof freeSpace === "number"
 ? usedCargo + freeSpace
 : null;
-<p>
-<b>Carrier Cargo:</b>
-${
-usedCargo !== null && totalCargo !== null
-? `${usedCargo} / ${totalCargo}`
-: "NO DATA"
-}
-</p>
+
 const fleetHTML = `
 
 <div class="box">
@@ -459,9 +445,11 @@ fc.market?.services?.outfitting || "NO DATA"
 
 <p>
 <b>Carrier Cargo:</b>
-${usedCargo}
-/
-${totalCargo}
+${
+usedCargo !== null && totalCargo !== null
+? `${usedCargo} / ${totalCargo}`
+: "NO DATA"
+}
 </p>
 
 </div>
