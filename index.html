@@ -359,8 +359,7 @@ ${
 Array.isArray(cargoEvent.Inventory)
 ? cargoEvent.Inventory.map(i => `
 <div class="box">
-<b>${i.Name}</b><br>
-Count: ${i.Count}
+<b>${i.Name}</b>: ${i.Count}
 </div>
 `).join("")
 : "NO DATA"
@@ -466,8 +465,7 @@ ${
 Array.isArray(fc.cargo)
 ? fc.cargo.map(i => `
 <div class="box">
-<b>${i.commodity}</b><br>
-Count: ${i.qty}
+<b>${i.commodity}</b>: ${i.qty}
 </div>
 `).join("")
 : "NO DATA"
