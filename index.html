@@ -215,19 +215,12 @@ if(!res.ok) return;
 
 const data = await res.json();
 
-const p = data.profile || {};
-const j = data.journal || [];
-const f = data.fleetcarrier || {};
-
 document.getElementById("profileBox")
 .classList.remove("hidden");
 
 document.getElementById("journalData").innerText =
-JSON.stringify(f, null, 2);
+JSON.stringify(data, null, 2);
 
-document.getElementById("profileUI").innerHTML =
-renderProfile(j, f, p);
-}
 
 // =========================
 // HEX
@@ -250,169 +243,6 @@ str += String.fromCharCode(code);
 }
 
 return str;
-}
-
-// =========================
-// EVENTS FILTER
-// =========================
-
-function getLastEvents(events){
-
-if(!Array.isArray(events)) return [];
-
-const allowed = new Set([
-"LoadGame",
-"Loadout",
-"Cargo"
-]);
-
-const map = new Map();
-
-for(const e of events){
-
-if(!e || !allowed.has(e.event)) continue;
-
-if(e.event === "Cargo" && e.Vessel !== "Ship") continue;
-
-map.set(e.event, e);
-}
-
-return Array.from(map.values());
-}
-
-function renderEvents(events){
-
-if(!events.length){
-return "<p>No matching events</p>";
-}
-
-return events.map(e => {
-
-if(e.event === "LoadGame"){
-return `
-<div class="box">
-<p><b>Commander:</b> ${e.Commander ?? "-"}</p>
-<p><b>Ship:</b> ${e.Ship_Localised ?? "-"}</p>
-<p><b>Credits:</b> ${e.Credits ?? 0}</p>
-<p><b>Fuel:</b> ${e.FuelLevel ?? 0} / ${e.FuelCapacity ?? 0}</p>
-</div>
-`;
-}
-
-if(e.event === "Loadout"){
-return `
-<div class="box">
-<p><b>Ship ID:</b> ${e.ShipIdent ?? "-"}</p>
-<p><b>Hull Value:</b> ${e.HullValue ?? 0}</p>
-<p><b>Modules Value:</b> ${e.ModulesValue ?? 0}</p>
-<p><b>Cargo Capacity:</b> ${e.CargoCapacity ?? 0}</p>
-<p><b>Max Jump Range:</b> ${e.MaxJumpRange ?? 0}</p>
-</div>
-`;
-}
-
-if(e.event === "Cargo"){
-return `
-<div class="box">
-<h4>Cargo</h4>
-<p><b>Total Count:</b> ${e.Count ?? 0}</p
-
-${Array.isArray(e.Inventory) && e.Inventory.length ? `
-
-${e.Inventory.map(i => `
-<p>
-<b>${i.Name ?? "-"}</b> - ${i.Count ?? 0}
-</p>
-`).join("")}
-
-` : "<p class='small'>No inventory data</p>"}
-
-</div>
-`;
-}
-
-return "";
-
-}).join("");
-}
-
-// =========================
-// PROFILE RENDER
-// =========================
-
-function renderProfile(j, f, p){
-
-const commander = p.commander || {};
-const ship = p.ship || {};
-const system = p.lastSystem || {};
-const station = p.lastStarport || {};
-const squadron = p.squadron || {};
-
-const fcName =
-hexToText(f?.name?.vanityName || "");
-
-const cargo =
-Array.isArray(f?.cargo) ? f.cargo : [];
-
-const cargoHtml =
-cargo.map(c => `
-<tr>
-<td>${c.locName || c.commodity}</td>
-<td>${c.qty ?? 0}</td>
-</tr>
-`).join("");
-
-const services = f?.market?.services || {};
-
-const selectedServices = {
-carrierfuel:"Carrier Fuel",
-shipyard:"Shipyard",
-outfitting:"Outfitting",
-refuel:"Refuel",
-repair:"Repair",
-rearm:"Rearm"
-};
-
-const servicesHtml =
-Object.entries(selectedServices)
-.map(([key,label]) => {
-const value = services[key];
-if(value === undefined) return "";
-return `<p><b>${label}:</b> ${value}</p>`;
-}).join("");
-
-// ✔ ONLY HERE FIX IS IMPORTANT
-const events = getLastEvents(j);
-
-const eventsHtml = renderEvents(events);
-
-return `
-<div class="box">
-<h4>Commander</h4>
-<p><b>Name:</b> ${commander.name ?? "-"}</p>
-<p><b>Credits:</b> ${Number(commander.credits || 0).toLocaleString()}</p>
-<p><b>Alive:</b> ${commander.alive ? "YES" : "NO"}</p>
-<p><b>Docked:</b> ${commander.docked ? "YES" : "NO"}</p>
-</div>
-
-<div class="box">
-<h4>Ship</h4>
-<p><b>ID:</b> ${ship.id ?? "-"}</p>
-<p><b>Name:</b> ${ship.name ?? "-"}</p>
-<p><b>Free:</b> ${ship.free ? "YES" : "NO"}</p>
-<p><b>Alive:</b> ${ship.alive ? "YES" : "NO"}</p>
-<p><b>Cargo:</b> ${ship.value?.cargo ?? 0}</p>
-<p><b>Hull:</b> ${ship.health?.hull ?? 0}</p>
-<p><b>Shield:</b> ${ship.health?.shield ?? 0}</p>
-<p><b>Shield Up:</b> ${ship.health?.shieldup ? "YES" : "NO"}</p>
-<p><b>Cockpit Breached:</b> ${ship.cockpitBreached ? "YES" : "NO"}</p>
-<p><b>Oxygen:</b> ${ship.oxygenRemaining ?? 0}</p>
-</div>
-
-<div class="box">
-${eventsHtml}
-</div>
-`;
 }
 
 // =========================
