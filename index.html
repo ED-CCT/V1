@@ -18,10 +18,20 @@ min-height:100vh;
 text-align:center;
 }
 
-.container{max-width:900px;padding:40px;}
+.container{
+max-width:900px;
+padding:40px;
+}
 
-h1{color:#ff9800;font-size:48px;}
-h2{color:#9fb3c8;font-weight:normal;}
+h1{
+color:#ff9800;
+font-size:48px;
+}
+
+h2{
+color:#9fb3c8;
+font-weight:normal;
+}
 
 .card{
 margin-top:25px;
@@ -51,11 +61,19 @@ background:#ff9800;
 font-weight:bold;
 }
 
-.secondary{background:#253041;color:white;}
+.secondary{
+background:#253041;
+color:white;
+}
 
-.hidden{display:none;}
+.hidden{
+display:none;
+}
 
-.status{margin-top:15px;color:#ff9800;}
+.status{
+margin-top:15px;
+color:#ff9800;
+}
 
 .small{
 color:#9fb3c8;
@@ -88,6 +106,25 @@ margin-top:10px;
 background:#0b0f1a;
 border-radius:8px;
 border:1px solid #1f2a3a;
+}
+
+.event{
+margin-top:10px;
+padding:10px;
+background:#111827;
+border:1px solid #253041;
+border-radius:8px;
+}
+
+.event h5{
+margin:0 0 10px 0;
+color:#ff9800;
+}
+
+.event-row{
+margin:4px 0;
+font-size:14px;
+word-break:break-word;
 }
 </style>
 </head>
@@ -212,29 +249,6 @@ data.frontier
 
 
 // =========================
-// JOURNAL HELPERS
-// =========================
-
-function getLatestEvents(events){
-
-if(!Array.isArray(events))
-return {};
-
-const latest = {};
-
-for(const entry of events){
-
-if(!entry?.event)
-continue;
-
-latest[entry.event] = entry;
-}
-
-return latest;
-}
-
-
-// =========================
 // PROFILE
 // =========================
 
@@ -247,16 +261,7 @@ if(!res.ok) return;
 
 const data = await res.json();
 
-// ORYGINALNY JOURNAL
-const rawJournal = data.journal || {};
-
-// JEŚLI journal TO TABLICA EVENTÓW
-// ZOSTAWIAMY TYLKO OSTATNI EVENT
-const latestJournalEvents =
-Array.isArray(rawJournal)
-? getLatestEvents(rawJournal)
-: rawJournal;
-
+const j = data.journal || [];
 const f = data.fleetcarrier || {};
 
 document.getElementById("profileBox")
@@ -264,11 +269,11 @@ document.getElementById("profileBox")
 
 // RAW JSON
 document.getElementById("journalData").innerText =
-JSON.stringify(latestJournalEvents, null, 2);
+JSON.stringify(j, null, 2);
 
 // UI
 document.getElementById("profileUI").innerHTML =
-renderProfile(latestJournalEvents, f);
+renderProfile(j, f);
 }
 
 function hexToText(hex){
@@ -294,22 +299,98 @@ return str;
 }
 
 // =========================
+// GET LATEST EVENTS
+// =========================
+
+function getLatestEvents(events){
+
+if(!Array.isArray(events))
+return [];
+
+const latest = {};
+
+for(const item of events){
+
+if(!item?.event)
+continue;
+
+latest[item.event] = item;
+}
+
+return Object.values(latest);
+}
+
+// =========================
+// RENDER EVENTS
+// =========================
+
+function renderEvents(events){
+
+const latestEvents = getLatestEvents(events);
+
+if(!latestEvents.length){
+return `
+<div class="box">
+<h4>Events</h4>
+<p>No events</p>
+</div>
+`;
+}
+
+const html = latestEvents.map(ev => {
+
+const rows = Object.entries(ev)
+.filter(([key]) => key !== "event")
+.map(([key, value]) => {
+
+let finalValue = value;
+
+if(typeof value === "object"){
+finalValue = JSON.stringify(value);
+}
+
+return `
+<div class="event-row">
+<b>${key}:</b> ${finalValue}
+</div>
+`;
+})
+.join("");
+
+return `
+<div class="event">
+<h5>${ev.event}</h5>
+${rows}
+</div>
+`;
+
+}).join("");
+
+return `
+<div class="box">
+<h4>Latest Events</h4>
+${html}
+</div>
+`;
+}
+
+// =========================
 // PROFILE RENDER
 // =========================
 
-function renderProfile(p, f){
+function renderProfile(j, f){
 
-// DLA EVENT JSON
-const loadGame = p.LoadGame || {};
-const loadout = p.Loadout || {};
-const cargoEvent = p.Cargo || {};
+const latestEvents =
+getLatestEvents(j);
 
-// STARE STRUKTURY
-const commander = p.commander || {};
-const ship = p.ship || {};
-const system = p.lastSystem || {};
-const station = p.lastStarport || {};
-const squadron = p.squadron || {};
+const loadGame =
+latestEvents.find(x => x.event === "LoadGame") || {};
+
+const loadout =
+latestEvents.find(x => x.event === "Loadout") || {};
+
+const cargoEvent =
+latestEvents.find(x => x.event === "Cargo") || {};
 
 const fcName =
 hexToText(
@@ -377,32 +458,33 @@ return `
 
 <div class="box">
 
-<h4>Latest Journal Events</h4>
+<h4>Commander</h4>
 
-<p><b>Commander:</b>
-${loadGame.Commander ?? "-"}
-</p>
+<p><b>Name:</b> ${loadGame.Commander ?? "-"}</p>
 
-<p><b>Ship:</b>
-${loadGame.Ship_Localised ?? "-"}
-</p>
+<p><b>Ship:</b> ${loadGame.Ship_Localised ?? "-"}</p>
 
-<p><b>Fuel:</b>
-${loadGame.FuelLevel ?? 0}
-/
-${loadGame.FuelCapacity ?? 0}
-</p>
+<p><b>Fuel:</b> ${loadGame.FuelLevel ?? 0} / ${loadGame.FuelCapacity ?? 0}</p>
 
-<p><b>Ship Ident:</b>
-${loadout.ShipIdent ?? "-"}
-</p>
+</div>
+
+
+<div class="box">
+
+<h4>Loadout</h4>
+
+<p><b>Ship Ident:</b> ${loadout.ShipIdent ?? "-"}</p>
 
 <p><b>Hull Value:</b>
-${Number(loadout.HullValue || 0).toLocaleString()}
+${Number(
+loadout.HullValue || 0
+).toLocaleString()}
 </p>
 
 <p><b>Modules Value:</b>
-${Number(loadout.ModulesValue || 0).toLocaleString()}
+${Number(
+loadout.ModulesValue || 0
+).toLocaleString()}
 </p>
 
 <p><b>Cargo Capacity:</b>
@@ -413,131 +495,19 @@ ${loadout.CargoCapacity ?? 0}
 ${loadout.MaxJumpRange ?? 0}
 </p>
 
-<p><b>Current Cargo Count:</b>
+</div>
+
+
+<div class="box">
+
+<h4>Cargo</h4>
+
+<p><b>Vessel:</b>
+${cargoEvent.Vessel ?? "-"}
+</p>
+
+<p><b>Count:</b>
 ${cargoEvent.Count ?? 0}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Commander</h4>
-
-<p><b>Name:</b> ${commander.name ?? "-"}</p>
-
-<p><b>Credits:</b>
-${Number(
-commander.credits || 0
-).toLocaleString()}
-</p>
-
-<p><b>Alive:</b>
-${commander.alive ? "YES" : "NO"}
-</p>
-
-<p><b>Docked:</b>
-${commander.docked ? "YES" : "NO"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Ship</h4>
-
-<p><b>ID:</b> ${ship.id ?? "-"}</p>
-
-<p><b>Name:</b> ${ship.name ?? "-"}</p>
-
-<p><b>Free:</b>
-${ship.free ? "YES" : "NO"}
-</p>
-
-<p><b>Alive:</b>
-${ship.alive ? "YES" : "NO"}
-</p>
-
-<p><b>Cargo:</b>
-${ship.value?.cargo ?? 0}
-</p>
-
-<p><b>Hull:</b>
-${ship.health?.hull ?? 0}
-</p>
-
-<p><b>Shield:</b>
-${ship.health?.shield ?? 0}
-</p>
-
-<p><b>Shield Up:</b>
-${ship.health?.shieldup ? "YES" : "NO"}
-</p>
-
-<p><b>Cockpit Breached:</b>
-${ship.cockpitBreached ? "YES" : "NO"}
-</p>
-
-<p><b>Oxygen Remaining:</b>
-${ship.oxygenRemaining ?? 0}
-</p>
-
-<p><b>Station:</b>
-${ship.station?.name ?? "-"}
-</p>
-
-<p><b>System:</b>
-${ship.starsystem?.name ?? "-"}
-</p>
-
-<p>
-<small>
-System Address:
-${ship.starsystem?.systemaddress ?? "-"}
-</small>
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Last Known Location</h4>
-
-<p><b>System:</b>
-${system.name ?? "-"}
-</p>
-
-<p><b>System ID:</b>
-${system.id ?? "-"}
-</p>
-
-<p><b>Starport:</b>
-${station.name ?? "-"}
-</p>
-
-<p><b>Starport ID:</b>
-${station.id ?? "-"}
-</p>
-
-</div>
-
-
-<div class="box">
-
-<h4>Squadron</h4>
-
-<p><b>Name:</b>
-${squadron.name ?? "-"}
-</p>
-
-<p><b>Tag:</b>
-${squadron.tag ?? "-"}
-</p>
-
-<p><b>Rank:</b>
-${squadron.rank ?? "-"}
 </p>
 
 </div>
@@ -619,6 +589,8 @@ No cargo
 </table>
 
 </div>
+
+${renderEvents(j)}
 
 `;
 }
