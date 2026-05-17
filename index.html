@@ -6,7 +6,6 @@
 <title>ED-CCT</title>
 
 <style>
-
 body{
 margin:0;
 background:#0b0f1a;
@@ -19,21 +18,10 @@ min-height:100vh;
 text-align:center;
 }
 
-.container{
-max-width:900px;
-padding:40px;
-width:100%;
-}
+.container{max-width:900px;padding:40px;}
 
-h1{
-color:#ff9800;
-font-size:48px;
-}
-
-h2{
-color:#9fb3c8;
-font-weight:normal;
-}
+h1{color:#ff9800;font-size:48px;}
+h2{color:#9fb3c8;font-weight:normal;}
 
 .card{
 margin-top:25px;
@@ -51,7 +39,6 @@ background:#1b2535;
 border:none;
 color:white;
 border-radius:8px;
-box-sizing:border-box;
 }
 
 button{
@@ -64,19 +51,11 @@ background:#ff9800;
 font-weight:bold;
 }
 
-.secondary{
-background:#253041;
-color:white;
-}
+.secondary{background:#253041;color:white;}
 
-.hidden{
-display:none;
-}
+.hidden{display:none;}
 
-.status{
-margin-top:15px;
-color:#ff9800;
-}
+.status{margin-top:15px;color:#ff9800;}
 
 .small{
 color:#9fb3c8;
@@ -89,7 +68,6 @@ background:#0b0f1a;
 padding:15px;
 border-radius:8px;
 overflow:auto;
-max-height:500px;
 }
 
 .flex{
@@ -111,7 +89,6 @@ background:#0b0f1a;
 border-radius:8px;
 border:1px solid #1f2a3a;
 }
-
 </style>
 </head>
 
@@ -134,7 +111,6 @@ border:1px solid #1f2a3a;
 <button class="secondary" onclick="login()">Login</button>
 
 <div id="authStatus" class="status"></div>
-
 </div>
 
 <!-- DASHBOARD -->
@@ -161,26 +137,20 @@ Logout
 <!-- PROFILE -->
 <div id="profileBox" class="card hidden">
 
-<h3>Latest Journal Events</h3>
+<h3>Frontier Profile</h3>
 
 <div class="flex">
 
 <!-- RAW -->
 <div class="half">
-
 <h4>Raw JSON</h4>
-
 <pre id="journalData">Loading...</pre>
-
 </div>
 
 <!-- UI -->
 <div class="half">
-
 <h4>Structured View</h4>
-
 <div id="profileUI"></div>
-
 </div>
 
 </div>
@@ -195,7 +165,6 @@ const API =
 "https://elite-oauth.edcolonycommoditiestracker.workers.dev";
 
 let session = null;
-
 
 // =========================
 // INIT
@@ -229,11 +198,8 @@ const data = await res.json();
 
 if(!data.logged) return;
 
-document.getElementById("authBox")
-.classList.add("hidden");
-
-document.getElementById("dashboard")
-.classList.remove("hidden");
+document.getElementById("authBox").classList.add("hidden");
+document.getElementById("dashboard").classList.remove("hidden");
 
 document.getElementById("userEmail").innerText =
 "Logged as: " + data.email;
@@ -242,6 +208,29 @@ document.getElementById("frontierStatus").innerText =
 data.frontier
 ? "Frontier: CONNECTED ✔"
 : "Frontier: NOT CONNECTED ✖";
+}
+
+
+// =========================
+// JOURNAL HELPERS
+// =========================
+
+function getLatestEvents(events){
+
+if(!Array.isArray(events))
+return {};
+
+const latest = {};
+
+for(const entry of events){
+
+if(!entry?.event)
+continue;
+
+latest[entry.event] = entry;
+}
+
+return latest;
 }
 
 
@@ -258,174 +247,380 @@ if(!res.ok) return;
 
 const data = await res.json();
 
-// journal musi być tablicą eventów
-const j = data.journal || [];
+// ORYGINALNY JOURNAL
+const rawJournal = data.journal || {};
+
+// JEŚLI journal TO TABLICA EVENTÓW
+// ZOSTAWIAMY TYLKO OSTATNI EVENT
+const latestJournalEvents =
+Array.isArray(rawJournal)
+? getLatestEvents(rawJournal)
+: rawJournal;
+
+const f = data.fleetcarrier || {};
 
 document.getElementById("profileBox")
 .classList.remove("hidden");
 
 // RAW JSON
 document.getElementById("journalData").innerText =
-JSON.stringify(j, null, 2);
+JSON.stringify(latestJournalEvents, null, 2);
 
-// GUI
+// UI
 document.getElementById("profileUI").innerHTML =
-renderLatestEvents(j);
+renderProfile(latestJournalEvents, f);
 }
 
+function hexToText(hex){
 
-// =========================
-// GET LATEST EVENTS
-// =========================
+if(!hex) return "";
 
-function getLatestEvents(events){
+let str = "";
 
-if(!Array.isArray(events)) return {};
+for(let i = 0; i < hex.length; i += 2){
 
-const latest = {};
+const code =
+parseInt(
+hex.substr(i,2),
+16
+);
 
-for(const ev of events){
-
-if(!ev.event) continue;
-
-// zawsze nadpisujemy
-// dzięki temu zostaje ostatni event
-latest[ev.event] = ev;
+if(!isNaN(code)){
+str += String.fromCharCode(code);
+}
 }
 
-return latest;
+return str;
 }
 
-
 // =========================
-// RENDER EVENTS
-// =========================
-
-function renderLatestEvents(events){
-
-const latest = getLatestEvents(events);
-
-return Object.values(latest)
-.map(ev => {
-
-
-// =========================
-// LOADGAME
+// PROFILE RENDER
 // =========================
 
-if(ev.event === "LoadGame"){
+function renderProfile(p, f){
 
-return `
+// DLA EVENT JSON
+const loadGame = p.LoadGame || {};
+const loadout = p.Loadout || {};
+const cargoEvent = p.Cargo || {};
 
-<div class="box">
+// STARE STRUKTURY
+const commander = p.commander || {};
+const ship = p.ship || {};
+const system = p.lastSystem || {};
+const station = p.lastStarport || {};
+const squadron = p.squadron || {};
 
-<h4>LoadGame</h4>
+const fcName =
+hexToText(
+f?.name?.vanityName || ""
+);
 
-<p><b>Commander:</b>
-${ev.Commander ?? "-"}
-</p>
+const cargo =
+Array.isArray(f?.cargo)
+? f.cargo
+: [];
 
-<p><b>Ship:</b>
-${ev.Ship_Localised ?? "-"}
-</p>
+const cargoHtml =
+cargo.map(c => `
+<tr>
+<td>${c.locName || c.commodity}</td>
+<td>${c.qty ?? 0}</td>
+</tr>
+`).join("");
 
-<p><b>Fuel Level:</b>
-${ev.FuelLevel ?? 0}
-</p>
+const services =
+f?.market?.services || {};
 
-<p><b>Fuel Capacity:</b>
-${ev.FuelCapacity ?? 0}
-</p>
+const selectedServices = {
 
-<p><b>Timestamp:</b>
-${ev.timestamp ?? "-"}
-</p>
+carrierfuel:
+"Carrier Fuel",
 
-</div>
+shipyard:
+"Shipyard",
 
-`;
-}
+outfitting:
+"Outfitting",
 
+refuel:
+"Refuel",
 
-// =========================
-// LOADOUT
-// =========================
+repair:
+"Repair",
 
-if(ev.event === "Loadout"){
+rearm:
+"Rearm"
 
-return `
+};
 
-<div class="box">
+const servicesHtml =
+Object.entries(selectedServices)
+.map(([key,label]) => {
 
-<h4>Loadout</h4>
+const value =
+services[key];
 
-<p><b>Ship Ident:</b>
-${ev.ShipIdent ?? "-"}
-</p>
-
-<p><b>Hull Value:</b>
-${Number(
-ev.HullValue ?? 0
-).toLocaleString()}
-</p>
-
-<p><b>Modules Value:</b>
-${Number(
-ev.ModulesValue ?? 0
-).toLocaleString()}
-</p>
-
-<p><b>Cargo Capacity:</b>
-${ev.CargoCapacity ?? 0}
-</p>
-
-<p><b>Max Jump Range:</b>
-${ev.MaxJumpRange ?? 0}
-</p>
-
-<p><b>Timestamp:</b>
-${ev.timestamp ?? "-"}
-</p>
-
-</div>
-
-`;
-}
-
-
-// =========================
-// CARGO
-// =========================
-
-if(ev.event === "Cargo"){
-
-return `
-
-<div class="box">
-
-<h4>Cargo</h4>
-
-<p><b>Vessel:</b>
-${ev.Vessel ?? "-"}
-</p>
-
-<p><b>Count:</b>
-${ev.Count ?? 0}
-</p>
-
-<p><b>Timestamp:</b>
-${ev.timestamp ?? "-"}
-</p>
-
-</div>
-
-`;
-}
-
+if(value === undefined)
 return "";
+
+return `
+<p>
+<b>${label}:</b> ${value}
+</p>
+`;
 
 })
 .join("");
+
+return `
+
+<div class="box">
+
+<h4>Latest Journal Events</h4>
+
+<p><b>Commander:</b>
+${loadGame.Commander ?? "-"}
+</p>
+
+<p><b>Ship:</b>
+${loadGame.Ship_Localised ?? "-"}
+</p>
+
+<p><b>Fuel:</b>
+${loadGame.FuelLevel ?? 0}
+/
+${loadGame.FuelCapacity ?? 0}
+</p>
+
+<p><b>Ship Ident:</b>
+${loadout.ShipIdent ?? "-"}
+</p>
+
+<p><b>Hull Value:</b>
+${Number(loadout.HullValue || 0).toLocaleString()}
+</p>
+
+<p><b>Modules Value:</b>
+${Number(loadout.ModulesValue || 0).toLocaleString()}
+</p>
+
+<p><b>Cargo Capacity:</b>
+${loadout.CargoCapacity ?? 0}
+</p>
+
+<p><b>Max Jump Range:</b>
+${loadout.MaxJumpRange ?? 0}
+</p>
+
+<p><b>Current Cargo Count:</b>
+${cargoEvent.Count ?? 0}
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h4>Commander</h4>
+
+<p><b>Name:</b> ${commander.name ?? "-"}</p>
+
+<p><b>Credits:</b>
+${Number(
+commander.credits || 0
+).toLocaleString()}
+</p>
+
+<p><b>Alive:</b>
+${commander.alive ? "YES" : "NO"}
+</p>
+
+<p><b>Docked:</b>
+${commander.docked ? "YES" : "NO"}
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h4>Ship</h4>
+
+<p><b>ID:</b> ${ship.id ?? "-"}</p>
+
+<p><b>Name:</b> ${ship.name ?? "-"}</p>
+
+<p><b>Free:</b>
+${ship.free ? "YES" : "NO"}
+</p>
+
+<p><b>Alive:</b>
+${ship.alive ? "YES" : "NO"}
+</p>
+
+<p><b>Cargo:</b>
+${ship.value?.cargo ?? 0}
+</p>
+
+<p><b>Hull:</b>
+${ship.health?.hull ?? 0}
+</p>
+
+<p><b>Shield:</b>
+${ship.health?.shield ?? 0}
+</p>
+
+<p><b>Shield Up:</b>
+${ship.health?.shieldup ? "YES" : "NO"}
+</p>
+
+<p><b>Cockpit Breached:</b>
+${ship.cockpitBreached ? "YES" : "NO"}
+</p>
+
+<p><b>Oxygen Remaining:</b>
+${ship.oxygenRemaining ?? 0}
+</p>
+
+<p><b>Station:</b>
+${ship.station?.name ?? "-"}
+</p>
+
+<p><b>System:</b>
+${ship.starsystem?.name ?? "-"}
+</p>
+
+<p>
+<small>
+System Address:
+${ship.starsystem?.systemaddress ?? "-"}
+</small>
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h4>Last Known Location</h4>
+
+<p><b>System:</b>
+${system.name ?? "-"}
+</p>
+
+<p><b>System ID:</b>
+${system.id ?? "-"}
+</p>
+
+<p><b>Starport:</b>
+${station.name ?? "-"}
+</p>
+
+<p><b>Starport ID:</b>
+${station.id ?? "-"}
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h4>Squadron</h4>
+
+<p><b>Name:</b>
+${squadron.name ?? "-"}
+</p>
+
+<p><b>Tag:</b>
+${squadron.tag ?? "-"}
+</p>
+
+<p><b>Rank:</b>
+${squadron.rank ?? "-"}
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h4>Fleet Carrier</h4>
+
+<p><b>Callsign:</b>
+${f?.name?.callsign ?? "-"}
+</p>
+
+<p><b>Name:</b>
+${fcName || "-"}
+</p>
+
+<p><b>System:</b>
+${f?.currentStarSystem ?? "-"}
+</p>
+
+<p><b>Balance:</b>
+${Number(
+f?.balance || 0
+).toLocaleString()}
+</p>
+
+<p><b>Fuel:</b>
+${f?.fuel ?? 0}
+</p>
+
+<p><b>Docking Access:</b>
+${f?.dockingAccess ?? "-"}
+</p>
+
+<p><b>Notorious Access:</b>
+${f?.notoriousAccess ? "YES" : "NO"}
+</p>
+
+<p><b>Free Cargo Space:</b>
+${f?.capacity?.freeSpace ?? 0}
+</p>
+
+<p><b>Stored Cargo:</b>
+${f?.capacity?.cargoNotForSale ?? 0}
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h4>Fleet Carrier Services</h4>
+
+${servicesHtml || "<p>No services</p>"}
+
+</div>
+
+
+<div class="box">
+
+<h4>Fleet Carrier Cargo</h4>
+
+<table style="width:100%;border-collapse:collapse;">
+
+<tr>
+<th align="left">Commodity</th>
+<th align="left">Qty</th>
+</tr>
+
+${cargoHtml || `
+<tr>
+<td colspan="2">
+No cargo
+</td>
+</tr>
+`}
+
+</table>
+
+</div>
+
+`;
 }
 
 
@@ -436,29 +631,15 @@ return "";
 async function register(){
 
 const email =
-document.getElementById("email")
-.value
-.trim()
-.toLowerCase();
+document.getElementById("email").value.trim().toLowerCase();
 
 const password =
-document.getElementById("password")
-.value;
+document.getElementById("password").value;
 
-const res =
-await fetch(API + "/register",{
-
+const res = await fetch(API + "/register",{
 method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-email,
-password
-})
-
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({email,password})
 });
 
 const data = await res.json();
@@ -475,46 +656,25 @@ data.error || "Account created ✔";
 async function login(){
 
 const email =
-document.getElementById("email")
-.value
-.trim()
-.toLowerCase();
+document.getElementById("email").value.trim().toLowerCase();
 
 const password =
-document.getElementById("password")
-.value;
+document.getElementById("password").value;
 
-const res =
-await fetch(API + "/login",{
-
+const res = await fetch(API + "/login",{
 method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-email,
-password
-})
-
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({email,password})
 });
 
 const data = await res.json();
 
 if(data.error){
-
-document.getElementById("authStatus")
-.innerText = data.error;
-
+document.getElementById("authStatus").innerText = data.error;
 return;
 }
 
-sessionStorage.setItem(
-"auth_session",
-data.session
-);
-
+sessionStorage.setItem("auth_session",data.session);
 session = data.session;
 
 await loadDashboard();
@@ -528,22 +688,16 @@ await loadProfile();
 
 async function connectFrontier(){
 
-const res =
-await fetch(API + "/frontier/start",{
-
+const res = await fetch(API + "/frontier/start",{
 headers:{
 Authorization:"Bearer " + session
 }
-
 });
 
 const data = await res.json();
 
 if(data.error){
-
-document.getElementById("dashStatus")
-.innerText = data.error;
-
+document.getElementById("dashStatus").innerText = data.error;
 return;
 }
 
@@ -556,11 +710,7 @@ location.href = data.url;
 // =========================
 
 function logout(){
-
-sessionStorage.removeItem(
-"auth_session"
-);
-
+sessionStorage.removeItem("auth_session");
 location.reload();
 }
 
