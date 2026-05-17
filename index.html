@@ -264,17 +264,25 @@ function getLastEvents(events){
 
 if(!Array.isArray(events)) return [];
 
+// tylko interesujące eventy
+const allowed = new Set([
+"LoadGame",
+"Loadout",
+"Cargo"
+]);
+
 const map = new Map();
 
 for(const e of events){
 
-if(!e || !e.event) continue;
+if(!e || !allowed.has(e.event)) continue;
 
+// nadpisuje = zostaje ostatni
 map.set(e.event, e);
-
 }
 
-return Array.from(map.values());
+return Array.from(map.values())
+.sort((a,b)=> new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 function renderEvents(events){
