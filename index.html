@@ -271,7 +271,7 @@ for(const e of events){
 
 if(!e || !allowed.has(e.event)) continue;
 
-map.set(e.event, e); // override -> last wins
+map.set(e.event, e);
 }
 
 return Array.from(map.values());
@@ -283,13 +283,49 @@ if(!events.length){
 return "<p>No matching events</p>";
 }
 
-return events.map(e => `
+return events.map(e => {
+
+if(e.event === "LoadGame"){
+return `
 <div class="box">
-<p><b>${e.event}</b></p>
-<p class="small">${e.timestamp || "-"}</p>
-<pre>${JSON.stringify(e, null, 2)}</pre>
+<h4>LoadGame</h4>
+<p><b>Commander:</b> ${e.Commander ?? "-"}</p>
+<p><b>Ship:</b> ${e.Ship_Localised ?? "-"}</p>
+<p><b>Credits:</b> ${e.Credits ?? 0}</p>
+<p><b>Fuel:</b> ${e.FuelLevel ?? 0} / ${e.FuelCapacity ?? 0}</p>
+<p class="small">${e.timestamp ?? "-"}</p>
 </div>
-`).join("");
+`;
+}
+
+if(e.event === "Loadout"){
+return `
+<div class="box">
+<h4>Loadout</h4>
+<p><b>Ship ID:</b> ${e.ShipIdent ?? "-"}</p>
+<p><b>Hull Value:</b> ${e.HullValue ?? 0}</p>
+<p><b>Modules Value:</b> ${e.ModulesValue ?? 0}</p>
+<p><b>Cargo Capacity:</b> ${e.CargoCapacity ?? 0}</p>
+<p><b>Max Jump Range:</b> ${e.MaxJumpRange ?? 0}</p>
+<p class="small">${e.timestamp ?? "-"}</p>
+</div>
+`;
+}
+
+if(e.event === "Cargo"){
+return `
+<div class="box">
+<h4>Cargo</h4>
+<p><b>Vessel:</b> ${e.Vessel ?? "-"}</p>
+<p><b>Count:</b> ${e.Count ?? 0}</p>
+<p class="small">${e.timestamp ?? "-"}</p>
+</div>
+`;
+}
+
+return "";
+
+}).join("");
 }
 
 // =========================
