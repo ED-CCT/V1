@@ -155,7 +155,7 @@
           <div class="half">
             <h4>manual</h4>
             <button onclick="ManualColonisationSystemClaimSynch()">Manual</button>
-            <div id="manual"></div>
+            <pre id="manual"></pre>
           </div>
         </div>
       </div>
@@ -332,15 +332,16 @@
         <div class="box">
           <h4>Fleet Carrier Cargo</h4> ${Array.isArray(fc.cargo)? fc.cargo.map(i => `<div class="box"><b>${i.commodity}</b>: ${i.qty}</div>`).join("") : "NO DATA"}
         </div>`;
-    // RENDER
+	    // RENDER
         document.getElementById("profileUI").innerHTML = `${commanderHTML}${cargoHTML}${fleetHTML}${fleetCargoHTML}`;
-      } 
-      async function ManualColonisationSystemClaimSynch() {
-        const res = await fetch(API + "/ManualColonisationSystemClaimSynch?session=" + session);
-        if (!res.ok) return;
-        const data = await res.json();
-        document.getElementById("manual").innerText = data;
-      }
+	  } 
+	  async function ManualColonisationSystemClaimSynch() {
+		const res = await fetch(API + "/ManualColonisationSystemClaimSynch?session=" + session);
+		if (!res.ok) return;
+		const data = await res.json();
+		document.getElementById("manual").innerText =
+		JSON.stringify(data, null, 2);
+	  }
       // AUTH
       async function register() {
         const email = document.getElementById("email").value.trim().toLowerCase();
