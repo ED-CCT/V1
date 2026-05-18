@@ -302,9 +302,13 @@ async function init(){
   const ok =
     await loadDashboard();
 
-  if(ok){
-    await loadProfile();
-  }
+  if(res.status === 403){
+  return;
+}
+
+if(!res.ok){
+  return;
+}
 
 }
 
