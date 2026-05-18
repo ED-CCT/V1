@@ -851,8 +851,11 @@ async function login(){
 async function connectFrontier(){
 
   const res = await apiFetch(
-    "/frontier/start"
-  );
+  "/frontier/start",
+  {
+    method:"POST"
+  }
+);
 
   const data = await res.json();
 
