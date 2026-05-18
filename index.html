@@ -267,6 +267,9 @@ async function apiFetch(path, options = {}){
     credentials:"include",
     ...options
   };
+  opts.headers = {
+  ...(options.headers || {})
+};
 
   if(session){
     opts.headers.Authorization =
@@ -362,7 +365,7 @@ function hexToText(hex){
   for(let i=0;i<hex.length;i+=2){
 
     const code =
-      parse(hex.substr(i,2),16);
+      parseInt(hex.substr(i,2),16);
 
     if(!isNaN(code)){
       str += String.fromCharCode(code);
@@ -845,6 +848,12 @@ async function login(){
     data.session
   );
   session = data.session;
+  const dashboard =
+  await loadDashboard();
+
+if(dashboard?.frontier){
+  await loadProfile();
+}
 }
 
 // ================= FRONTIER =================
@@ -886,7 +895,7 @@ async function logout(){
 
   location.reload();
 }
-
+init();
 </script>
 
 </body>
