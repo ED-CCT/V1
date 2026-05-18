@@ -258,7 +258,6 @@ h4{
 const API =
 "https://elite-oauth.edcolonycommoditiestracker.workers.dev";
 
-let session = null;
 
 // ================= SAFE FETCH =================
 
@@ -272,11 +271,6 @@ async function apiFetch(path, options = {}){
   opts.headers = {
     ...(options.headers || {})
   };
-
-  if(session){
-    opts.headers.Authorization =
-      "Bearer " + session;
-  }
 
   const res = await fetch(API + path, opts);
 
@@ -304,11 +298,6 @@ async function apiFetch(path, options = {}){
 // ================= INIT =================
 
 async function init(){
-
-  session =
-    sessionStorage.getItem("auth_session");
-
-  if(!session) return;
 
   await loadDashboard();
   await loadProfile();
@@ -841,13 +830,6 @@ async function login(){
     return;
   }
 
-  sessionStorage.setItem(
-    "auth_session",
-    data.session
-  );
-
-  session = data.session;
-
   await loadDashboard();
   await loadProfile();
 }
@@ -879,11 +861,12 @@ async function connectFrontier(){
 
 async function logout(){
 
-  sessionStorage.removeItem(
-    "auth_session"
+  await apiFetch(
+    "/logout",
+    {
+      method:"POST"
+    }
   );
-
-  session = null;
 
   location.reload();
 }
