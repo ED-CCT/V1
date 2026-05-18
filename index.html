@@ -135,7 +135,7 @@ h4{
 
 .loading{
   opacity:0.7;
-  pointer-events:none;
+  poer-events:none;
 }
 
 </style>
@@ -299,11 +299,14 @@ async function apiFetch(path, options = {}){
 
 async function init(){
 
-  await loadDashboard();
-  await loadProfile();
-}
+  const ok =
+    await loadDashboard();
 
-init();
+  if(ok){
+    await loadProfile();
+  }
+
+}
 
 // ================= DASHBOARD =================
 
@@ -311,11 +314,15 @@ async function loadDashboard(){
 
   const res = await apiFetch("/me");
 
-  if(!res.ok) return;
+  if(!res.ok){
+    return false;
+  }
 
   const data = await res.json();
 
-  if(!data.logged) return;
+  if(!data.logged){
+    return false;
+  }
 
   document
     .getElementById("authBox")
@@ -336,6 +343,8 @@ async function loadDashboard(){
       data.frontier
         ? "Frontier: CONNECTED ✔"
         : "Frontier: NOT CONNECTED ✖";
+
+  return true;
 }
 
 // ================= HEX =================
@@ -349,7 +358,7 @@ function hexToText(hex){
   for(let i=0;i<hex.length;i+=2){
 
     const code =
-      parseInt(hex.substr(i,2),16);
+      parse(hex.substr(i,2),16);
 
     if(!isNaN(code)){
       str += String.fromCharCode(code);
