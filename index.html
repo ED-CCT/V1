@@ -838,10 +838,9 @@ async function login(){
 
     return;
   }
-  const data =
-    await loadDashboard();
-  
-  if(data?.frontier){
+  const dashboard =
+  await loadDashboard();
+  if(dashboard?.frontier){
     await loadProfile();
   }
   return data;
