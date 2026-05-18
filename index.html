@@ -299,16 +299,12 @@ async function apiFetch(path, options = {}){
 
 async function init(){
 
-  const ok =
+  const data =
     await loadDashboard();
 
-  if(res.status === 403){
-  return;
-}
-
-if(!res.ok){
-  return;
-}
+  if(data?.frontier){
+    await loadProfile();
+  }
 
 }
 
@@ -663,9 +659,9 @@ ${fc.market?.services?.refuel || "NO DATA"}
 ${fc.market?.services?.repair || "NO DATA"}
 </p>
 
-<p>
+<p>F
 <b>Rearm:</b>
-${fc.market?.services?.rearm || "NO DATA"}
+${fc.market?.services?.rearm || "NO DATA"}F
 </p>
 
 <p>
@@ -842,9 +838,13 @@ async function login(){
 
     return;
   }
-
-  await loadDashboard();
-  await loadProfile();
+  const data =
+    await loadDashboard();
+  
+  if(data?.frontier){
+    await loadProfile();
+  }
+  return data;
 }
 
 // ================= FRONTIER =================
